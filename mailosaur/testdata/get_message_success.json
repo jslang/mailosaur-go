@@ -1,0 +1,51 @@
+{
+    "id": "77061c9f-da47-4009-9f33-9715a3bbf00c",
+    "server": "Server name",
+    "from": [{
+        "name": "Acme",
+        "email": "noreply@example.com"
+    }],
+    "to": [{
+        "name": "Jane Doe",
+        "email": "janedoe.abc1234@mailosaur.io"
+    }],
+    "cc": [],
+    "bcc": [],
+    "received": "2019-08-06T17:44:07.197781+00:00",
+    "subject": "Email subject line",
+    "html": {
+        "links": [{
+            "href": "https://example.com/signup",
+            "text": "Sign Up Now"
+        }],
+        "images": [],
+        "body": "Lorem ipsum..."
+    },
+    "text": {
+        "links": [{
+            "href": "https://example.com/signup",
+            "text": "https://example.com/signup"
+        }],
+        "body": "Lorem ipsum..."
+    },
+    "attachments": [],
+    "metadata": {
+        "headers": [{
+            "field": "MIME-Version",
+            "value": "1.0"
+        }]
+    },
+    "hateosLinks": [{
+        "href": "self",
+        "method": "https://mailosaur.com/api/messages/77061c9f-da47-4009-9f33-9715a3bbf00c",
+        "rel": "GET"
+    }, {
+        "href": "delete",
+        "method": "https://mailosaur.com/api/messages/77061c9f-da47-4009-9f33-9715a3bbf00c",
+        "rel": "DELETE"
+    }, {
+        "href": "eml",
+        "method": "https://mailosaur.com/api/files/email/77061c9f-da47-4009-9f33-9715a3bbf00c",
+        "rel": "GET"
+    }]
+}
