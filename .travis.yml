@@ -1,4 +1,7 @@
 language: go
 go:
-  - 1.x
+  - 1.13
 script: go test -v ./mailosaur
+branches:
+  only:
+    - master

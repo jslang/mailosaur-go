@@ -1,3 +1,4 @@
+// mailosaur is a golang client implementation of the mailosaur test email service API
 package mailosaur
 
 import (
@@ -47,7 +48,7 @@ func NewClient(apiKey string, serverID string, options ...clientOption) *Client 
 
 // call constructs a request to the mailosaur API, applying necessary authorization and request headers to make a
 // successful API call.
-func (c *Client) call(method string, path string, queryParams map[string]interface{}, data map[string]interface{}) (*http.Response, error) {
+func (c *Client) call(method string, path string, queryParams map[string]interface{}, data interface{}) (*http.Response, error) {
 	req, err := http.NewRequest(method, c.serviceURL+"/"+path, nil)
 	if err != nil {
 		return nil, err
@@ -78,8 +79,8 @@ func setQueryParams(req *http.Request, params map[string]interface{}) {
 }
 
 // setJSONData sets the JSON encoded body for a given request based on the provided parameters.
-func setJSONData(req *http.Request, data map[string]interface{}) error {
-	if data == nil || len(data) == 0 {
+func setJSONData(req *http.Request, data interface{}) error {
+	if data == nil {
 		return nil
 	}
 	req.Header.Set("Content-Type", "application/json")

@@ -1,0 +1,20 @@
+{
+    "items": [{
+        "id": "77061c9f-da47-4009-9f33-9715a3bbf00c",
+        "server": "Server name",
+        "from": [{
+            "name": "Acme",
+            "email": "noreply@example.com"
+        }],
+        "to": [{
+            "name": "Jane Doe",
+            "email": "janedoe.abc1234@mailosaur.io"
+        }],
+        "cc": [],
+        "bcc": [],
+        "received": "2019-08-06T17:44:07.197781+00:00",
+        "subject": "Email subject line",
+        "summary": "Lorem ipsum...",
+        "attachments": 0
+    }]
+}

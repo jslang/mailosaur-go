@@ -35,8 +35,20 @@ Unit tests
 go test ./mailosaur
 ```
 
-Integration tests
+Integration tests, requires a valid mailosaur api key and server id to work:
 
 ```
 MAILOSAUR_API_KEY=<apikey> MAILOSAUR_SERVER_ID=<serverid> go test ./test/integration_test.go
 ```
+
+## API Completion Status
+
+Completed:
+
+    * Messages API
+
+TODO:
+
+    * Files API
+    * Servers API
+    * Analysis API

@@ -13,13 +13,13 @@ func TestGetMessage(t *testing.T) {
 	type testSetup struct {
 		apiKey   string
 		serverID string
-		recvReq  *http.Request
+		recvReq  *ReceivedRequest
 		client   *mailosaur.Client
 	}
 
 	setup := func(t *testing.T, resp *TestResponse) *testSetup {
 		t.Parallel()
-		s, recvReq := NewTestHTTPServer(resp)
+		s, recvReq := NewTestHTTPServer(t, resp)
 		apiKey := RandomAPIKey()
 		serverID := RandomServerID()
 		return &testSetup{
@@ -47,13 +47,13 @@ func TestDeleteMessage(t *testing.T) {
 	type testSetup struct {
 		apiKey   string
 		serverID string
-		recvReq  *http.Request
+		recvReq  *ReceivedRequest
 		client   *mailosaur.Client
 	}
 
 	setup := func(t *testing.T, resp *TestResponse) *testSetup {
 		t.Parallel()
-		s, recvReq := NewTestHTTPServer(resp)
+		s, recvReq := NewTestHTTPServer(t, resp)
 		apiKey := RandomAPIKey()
 		serverID := RandomServerID()
 		return &testSetup{
@@ -81,13 +81,13 @@ func TestListMessages(t *testing.T) {
 	type testSetup struct {
 		apiKey   string
 		serverID string
-		recvReq  *http.Request
+		recvReq  *ReceivedRequest
 		client   *mailosaur.Client
 	}
 
 	setup := func(t *testing.T, resp *TestResponse) *testSetup {
 		t.Parallel()
-		s, recvReq := NewTestHTTPServer(resp)
+		s, recvReq := NewTestHTTPServer(t, resp)
 		apiKey := RandomAPIKey()
 		serverID := RandomServerID()
 		return &testSetup{
@@ -127,7 +127,7 @@ func TestListMessages(t *testing.T) {
 			StatusCode: http.StatusOK,
 		})
 
-		_, err := ts.client.ListMessages(mailosaur.SetListMessagesPage(10))
+		_, err := ts.client.ListMessages(mailosaur.SetPage(10))
 		require.NoError(t, err)
 		require.Equal(t, "10", ts.recvReq.URL.Query().Get("page"))
 	})
@@ -138,7 +138,7 @@ func TestListMessages(t *testing.T) {
 			StatusCode: http.StatusOK,
 		})
 
-		_, err := ts.client.ListMessages(mailosaur.SetListMessagesItemsPerPage(100))
+		_, err := ts.client.ListMessages(mailosaur.SetItemsPerPage(100))
 		require.NoError(t, err)
 		require.Equal(t, "100", ts.recvReq.URL.Query().Get("itemsPerPage"))
 	})
@@ -150,22 +150,23 @@ func TestListMessages(t *testing.T) {
 		})
 
 		receivedAfter := time.Now()
-		_, err := ts.client.ListMessages(mailosaur.SetListMessagesReceivedAfter(receivedAfter))
+		_, err := ts.client.ListMessages(mailosaur.SetReceivedAfter(receivedAfter))
 		require.NoError(t, err)
 		require.Equal(t, receivedAfter.Format(time.RFC3339), ts.recvReq.URL.Query().Get("receivedAfter"))
 	})
 }
+
 func TestDeleteMessages(t *testing.T) {
 	type testSetup struct {
 		apiKey   string
 		serverID string
-		recvReq  *http.Request
+		recvReq  *ReceivedRequest
 		client   *mailosaur.Client
 	}
 
 	setup := func(t *testing.T, resp *TestResponse) *testSetup {
 		t.Parallel()
-		s, recvReq := NewTestHTTPServer(resp)
+		s, recvReq := NewTestHTTPServer(t, resp)
 		apiKey := RandomAPIKey()
 		serverID := RandomServerID()
 		return &testSetup{
@@ -195,5 +196,101 @@ func TestDeleteMessages(t *testing.T) {
 		err := ts.client.DeleteMessages()
 		require.NoError(t, err)
 		require.Equal(t, ts.serverID, ts.recvReq.URL.Query().Get("server"))
+	})
+}
+
+func TestSearchMessages(t *testing.T) {
+	type testSetup struct {
+		defaultLookup *mailosaur.SearchMessagesLookup
+		apiKey        string
+		serverID      string
+		recvReq       *ReceivedRequest
+		client        *mailosaur.Client
+	}
+
+	setup := func(t *testing.T, resp *TestResponse) *testSetup {
+		t.Parallel()
+		s, recvReq := NewTestHTTPServer(t, resp)
+		apiKey := RandomAPIKey()
+		serverID := RandomServerID()
+		return &testSetup{
+			defaultLookup: &mailosaur.SearchMessagesLookup{},
+			apiKey:        apiKey,
+			serverID:      serverID,
+			recvReq:       recvReq,
+			client:        mailosaur.NewClient(apiKey, serverID, mailosaur.SetServiceURL(s.URL)),
+		}
+	}
+
+	t.Run("calls search messages endpoint", func(t *testing.T) {
+		ts := setup(t, &TestResponse{
+			Body:       LoadTestData(t, "search_messages_success.json"),
+			StatusCode: http.StatusOK,
+		})
+
+		_, err := ts.client.SearchMessages(ts.defaultLookup)
+		require.NoError(t, err)
+		require.Equal(t, "/messages/search", ts.recvReq.URL.Path)
+		require.Equal(t, http.MethodPost, ts.recvReq.Method)
+	})
+
+	t.Run("uses provided search lookup", func(t *testing.T) {
+		ts := setup(t, &TestResponse{
+			Body:       LoadTestData(t, "search_messages_success.json"),
+			StatusCode: http.StatusOK,
+		})
+
+		_, err := ts.client.SearchMessages(&mailosaur.SearchMessagesLookup{
+			Body:    "body",
+			Subject: "subject",
+			SentTo:  "sentTo",
+		})
+		require.NoError(t, err)
+		require.JSONEq(t, `{"body": "body", "subject": "subject", "sent_to": "sentTo"}`, string(ts.recvReq.Body))
+	})
+
+	t.Run("uses configured server id", func(t *testing.T) {
+		ts := setup(t, &TestResponse{
+			Body:       LoadTestData(t, "search_messages_success.json"),
+			StatusCode: http.StatusOK,
+		})
+
+		_, err := ts.client.SearchMessages(ts.defaultLookup)
+		require.NoError(t, err)
+		require.Equal(t, ts.serverID, ts.recvReq.URL.Query().Get("server"))
+	})
+
+	t.Run("uses provided page", func(t *testing.T) {
+		ts := setup(t, &TestResponse{
+			Body:       LoadTestData(t, "search_messages_success.json"),
+			StatusCode: http.StatusOK,
+		})
+
+		_, err := ts.client.SearchMessages(ts.defaultLookup, mailosaur.SetPage(10))
+		require.NoError(t, err)
+		require.Equal(t, "10", ts.recvReq.URL.Query().Get("page"))
+	})
+
+	t.Run("uses provided items per page", func(t *testing.T) {
+		ts := setup(t, &TestResponse{
+			Body:       LoadTestData(t, "search_messages_success.json"),
+			StatusCode: http.StatusOK,
+		})
+
+		_, err := ts.client.SearchMessages(ts.defaultLookup, mailosaur.SetItemsPerPage(100))
+		require.NoError(t, err)
+		require.Equal(t, "100", ts.recvReq.URL.Query().Get("itemsPerPage"))
+	})
+
+	t.Run("uses provided receivedAfter", func(t *testing.T) {
+		ts := setup(t, &TestResponse{
+			Body:       LoadTestData(t, "search_messages_success.json"),
+			StatusCode: http.StatusOK,
+		})
+
+		receivedAfter := time.Now()
+		_, err := ts.client.SearchMessages(ts.defaultLookup, mailosaur.SetReceivedAfter(receivedAfter))
+		require.NoError(t, err)
+		require.Equal(t, receivedAfter.Format(time.RFC3339), ts.recvReq.URL.Query().Get("receivedAfter"))
 	})
 }

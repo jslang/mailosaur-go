@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"path/filepath"
 	"testing"
 
@@ -44,12 +45,27 @@ type TestResponse struct {
 	Headers    map[string]string
 }
 
+type ReceivedRequest struct {
+	URL     url.URL
+	Headers http.Header
+	Body    []byte
+	Method  string
+}
+
 // NewTestHTTPServer starts an http server that can be used to handle an http request, returns the started service and
 // a pointer to an http request that will be used to store the incoming request. The provided TestServiceResponse
-func NewTestHTTPServer(resp *TestResponse) (*httptest.Server, *http.Request) {
-	var recvReq http.Request
+func NewTestHTTPServer(t *testing.T, resp *TestResponse) (*httptest.Server, *ReceivedRequest) {
+	var (
+		recvReq ReceivedRequest
+		err     error
+	)
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		recvReq = *r
+		recvReq.Headers = r.Header
+		recvReq.Method = r.Method
+		recvReq.URL = *r.URL
+		recvReq.Body, err = ioutil.ReadAll(r.Body)
+		require.NoError(t, err)
+
 		for key, value := range resp.Headers {
 			w.Header().Add(key, value)
 		}
@@ -58,9 +74,8 @@ func NewTestHTTPServer(resp *TestResponse) (*httptest.Server, *http.Request) {
 		if resp.Body == nil {
 			return
 		}
-		if _, err := w.Write(resp.Body); err != nil {
-			panic(err)
-		}
+		_, err = w.Write(resp.Body)
+		require.NoError(t, err, "failed to write response body while handling test request")
 	}))
 	return s, &recvReq
 }
