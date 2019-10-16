@@ -6,13 +6,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strings"
+	"time"
 )
 
 const (
 	// ServiceURL provides the default service url for the mailosaur API
 	ServiceURL = "https://mailosaur.com/api"
+	SMTPHost   = "mailosaur.io"
 )
 
 // Client provides impelmentations of the mailosaur API
@@ -90,4 +93,21 @@ func setJSONData(req *http.Request, data interface{}) error {
 	}
 	req.Body = ioutil.NopCloser(bytes.NewReader(body))
 	return nil
+}
+
+func randomStr(n int) string {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	chars := "abcdefghijklmnopqrstuvwxyz"
+	charLen := len(chars)
+
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = chars[r.Intn(charLen)]
+	}
+	return string(b)
+}
+
+// GenerateEmail returns a random valid email address for the configured mailosaur server.
+func (c *Client) GenerateEmail() string {
+	return fmt.Sprintf("%s.%s@%s", randomStr(10), c.serverID, SMTPHost)
 }

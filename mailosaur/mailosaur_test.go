@@ -1,14 +1,17 @@
 package mailosaur_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/brianvoe/gofakeit"
+	"github.com/jslang/mailosaur-go/mailosaur"
 	"github.com/stretchr/testify/require"
 )
 
@@ -78,4 +81,15 @@ func NewTestHTTPServer(t *testing.T, resp *TestResponse) (*httptest.Server, *Rec
 		require.NoError(t, err, "failed to write response body while handling test request")
 	}))
 	return s, &recvReq
+}
+
+func TestGenerateEmail(t *testing.T) {
+	serverID := RandomServerID()
+	c := mailosaur.NewClient(RandomAPIKey(), serverID)
+
+	email := c.GenerateEmail()
+	parts := strings.SplitN(email, ".", 2)
+	require.Len(t, parts, 2)
+	require.Len(t, parts[0], 10)
+	require.Equal(t, fmt.Sprintf("%s@%s", serverID, mailosaur.SMTPHost), parts[1])
 }
