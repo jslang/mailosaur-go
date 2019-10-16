@@ -7,6 +7,36 @@ import (
 	"time"
 )
 
+// messageListOption configures options for listing message lists, for setting page, items per page, time filters, etc.
+type messageListOption func(map[string]interface{})
+
+// SetPage sets the page of results to request
+func SetPage(page int) messageListOption {
+	return func(data map[string]interface{}) {
+		data["page"] = page
+	}
+}
+
+// SetItemsPerPage sets the number of items to display per result page
+func SetItemsPerPage(itemsPerPage int) messageListOption {
+	return func(data map[string]interface{}) {
+		data["itemsPerPage"] = itemsPerPage
+	}
+}
+
+// SetReceivedAfter sets the time to filter messages by
+func SetReceivedAfter(receivedAfter time.Time) messageListOption {
+	return func(data map[string]interface{}) {
+		data["receivedAfter"] = receivedAfter.Format(time.RFC3339)
+	}
+}
+
+func applyMessageListOptions(data map[string]interface{}, options []messageListOption) {
+	for _, opt := range options {
+		opt(data)
+	}
+}
+
 // GetMessage retrieves the detail for a single email message.
 func (c *Client) GetMessage(messageID string) (*Message, error) {
 	httpResp, err := c.call(http.MethodGet, "messages/"+messageID, nil, nil)
@@ -39,37 +69,12 @@ type (
 	}
 )
 
-type listMessagesOption func(map[string]interface{})
-
-// SetListMessagesPage sets the page of results to request
-func SetListMessagesPage(page int) listMessagesOption {
-	return func(data map[string]interface{}) {
-		data["page"] = page
-	}
-}
-
-// SetListMessagesItemsPerPage sets the number of items to display per result page
-func SetListMessagesItemsPerPage(itemsPerPage int) listMessagesOption {
-	return func(data map[string]interface{}) {
-		data["itemsPerPage"] = itemsPerPage
-	}
-}
-
-// SetListMessagesReceivedAfter sets the time to filter messages by
-func SetListMessagesReceivedAfter(receivedAfter time.Time) listMessagesOption {
-	return func(data map[string]interface{}) {
-		data["receivedAfter"] = receivedAfter.Format(time.RFC3339)
-	}
-}
-
 // ListMessages returns a list of your messages in summary form.
-func (c *Client) ListMessages(options ...listMessagesOption) ([]*MessageSummary, error) {
+func (c *Client) ListMessages(options ...messageListOption) ([]*MessageSummary, error) {
 	queryParams := map[string]interface{}{
 		"server": c.serverID,
 	}
-	for _, opt := range options {
-		opt(queryParams)
-	}
+	applyMessageListOptions(queryParams, options)
 
 	httpResp, err := c.call(http.MethodGet, "messages", queryParams, nil)
 	if err != nil {
@@ -94,4 +99,28 @@ func (c *Client) DeleteMessages() error {
 	return nil
 }
 
-// TODO: implement search messages
+// SearchMessagesLookup defines the search parameters for a SearchMessages call.
+type SearchMessagesLookup struct {
+	SentTo  string `json:"sent_to,omitempty"`
+	Subject string `json:"subject,omitempty"`
+	Body    string `json:"body,omitempty"`
+}
+
+// SearchMessages returns a list of message summaries matching the specified search criteria.
+func (c *Client) SearchMessages(lookup *SearchMessagesLookup, options ...messageListOption) ([]*MessageSummary, error) {
+	queryParams := map[string]interface{}{
+		"server": c.serverID,
+	}
+	applyMessageListOptions(queryParams, options)
+
+	httpResp, err := c.call(http.MethodPost, "messages/search", queryParams, lookup)
+	if err != nil {
+		return nil, err
+	}
+	var resp struct{ Items []*MessageSummary }
+	body, err := ioutil.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return resp.Items, json.Unmarshal(body, &resp)
+}
