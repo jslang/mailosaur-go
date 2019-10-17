@@ -246,7 +246,7 @@ func TestSearchMessages(t *testing.T) {
 			SentTo:  "sentTo",
 		})
 		require.NoError(t, err)
-		require.JSONEq(t, `{"body": "body", "subject": "subject", "sent_to": "sentTo"}`, string(ts.recvReq.Body))
+		require.JSONEq(t, `{"body": "body", "subject": "subject", "sentTo": "sentTo"}`, string(ts.recvReq.Body))
 	})
 
 	t.Run("uses configured server id", func(t *testing.T) {
