@@ -101,7 +101,7 @@ func (c *Client) DeleteMessages() error {
 
 // SearchMessagesLookup defines the search parameters for a SearchMessages call.
 type SearchMessagesLookup struct {
-	SentTo  string `json:"sent_to,omitempty"`
+	SentTo  string `json:"sentTo,omitempty"`
 	Subject string `json:"subject,omitempty"`
 	Body    string `json:"body,omitempty"`
 }
