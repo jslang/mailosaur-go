@@ -39,7 +39,7 @@ func applyMessageListOptions(data map[string]interface{}, options []messageListO
 
 // GetMessage retrieves the detail for a single email message.
 func (c *Client) GetMessage(messageID string) (*Message, error) {
-	httpResp, err := c.call(http.MethodGet, "messages/"+messageID, nil, nil)
+	httpResp, err := c.Call(http.MethodGet, "messages/"+messageID, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (c *Client) GetMessage(messageID string) (*Message, error) {
 
 // DeleteMessage permanently deletes a message.
 func (c *Client) DeleteMessage(messageID string) error {
-	_, err := c.call(http.MethodDelete, "messages/"+messageID, nil, nil)
+	_, err := c.Call(http.MethodDelete, "messages/"+messageID, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (c *Client) ListMessages(options ...messageListOption) ([]*MessageSummary, 
 	}
 	applyMessageListOptions(queryParams, options)
 
-	httpResp, err := c.call(http.MethodGet, "messages", queryParams, nil)
+	httpResp, err := c.Call(http.MethodGet, "messages", queryParams, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func (c *Client) ListMessages(options ...messageListOption) ([]*MessageSummary, 
 
 // DeleteMessages permanently deletes all messages held by the specified server.
 func (c *Client) DeleteMessages() error {
-	_, err := c.call(http.MethodDelete, "messages", map[string]interface{}{
+	_, err := c.Call(http.MethodDelete, "messages", map[string]interface{}{
 		"server": c.serverID,
 	}, nil)
 	if err != nil {
@@ -113,7 +113,7 @@ func (c *Client) SearchMessages(lookup *SearchMessagesLookup, options ...message
 	}
 	applyMessageListOptions(queryParams, options)
 
-	httpResp, err := c.call(http.MethodPost, "messages/search", queryParams, lookup)
+	httpResp, err := c.Call(http.MethodPost, "messages/search", queryParams, lookup)
 	if err != nil {
 		return nil, err
 	}
