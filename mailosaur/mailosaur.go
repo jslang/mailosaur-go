@@ -49,9 +49,9 @@ func NewClient(apiKey string, serverID string, options ...clientOption) *Client 
 	return c
 }
 
-// call constructs a request to the mailosaur API, applying necessary authorization and request headers to make a
+// Call constructs a request to the mailosaur API, applying necessary authorization and request headers to make a
 // successful API call.
-func (c *Client) call(method string, path string, queryParams map[string]interface{}, data interface{}) (*http.Response, error) {
+func (c *Client) Call(method string, path string, queryParams map[string]interface{}, data interface{}) (*http.Response, error) {
 	req, err := http.NewRequest(method, c.serviceURL+"/"+path, nil)
 	if err != nil {
 		return nil, err

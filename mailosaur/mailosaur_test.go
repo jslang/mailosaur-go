@@ -1,6 +1,7 @@
 package mailosaur_test
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -81,6 +82,70 @@ func NewTestHTTPServer(t *testing.T, resp *TestResponse) (*httptest.Server, *Rec
 		require.NoError(t, err, "failed to write response body while handling test request")
 	}))
 	return s, &recvReq
+}
+
+func TestCall(t *testing.T) {
+	type TestSetup struct {
+		apiKey   string
+		serverID string
+		recvReq  *ReceivedRequest
+		client   *mailosaur.Client
+	}
+	setup := func(t *testing.T) *TestSetup {
+		s, recvReq := NewTestHTTPServer(t, &TestResponse{StatusCode: 200})
+		apiKey := RandomAPIKey()
+		serverID := RandomServerID()
+		return &TestSetup{
+			apiKey:   apiKey,
+			serverID: serverID,
+			recvReq:  recvReq,
+			client:   mailosaur.NewClient(apiKey, serverID, mailosaur.SetServiceURL(s.URL)),
+		}
+	}
+
+	t.Run("sends authorization", func(t *testing.T) {
+		ts := setup(t)
+		_, err := ts.client.Call("GET", "path", nil, nil)
+		require.NoError(t, err)
+
+		auth := base64.StdEncoding.EncodeToString([]byte(ts.apiKey + ":"))
+		require.Equal(t, "Basic "+auth, ts.recvReq.Headers.Get("Authorization"))
+	})
+
+	t.Run("uses requested http method", func(t *testing.T) {
+		ts := setup(t)
+		_, err := ts.client.Call(http.MethodHead, "path", nil, nil)
+		require.NoError(t, err)
+		require.Equal(t, http.MethodHead, ts.recvReq.Method)
+	})
+
+	t.Run("uses requested path", func(t *testing.T) {
+		ts := setup(t)
+		_, err := ts.client.Call(http.MethodHead, "thisismypath", nil, nil)
+		require.NoError(t, err)
+		require.Equal(t, "/thisismypath", ts.recvReq.URL.Path)
+
+	})
+
+	t.Run("sends json encoded body if available", func(t *testing.T) {
+		ts := setup(t)
+		msgID := RandomMessageID()
+		_, err := ts.client.Call(http.MethodPost, "", nil, struct {
+			MsgID string
+		}{msgID})
+		require.NoError(t, err)
+		require.JSONEq(t, `{"MsgID": "`+msgID+`"}`, string(ts.recvReq.Body))
+	})
+
+	t.Run("sends query params if available", func(t *testing.T) {
+		ts := setup(t)
+		msgID := RandomMessageID()
+		_, err := ts.client.Call(http.MethodPost, "", map[string]interface{}{
+			"msgID": msgID,
+		}, nil)
+		require.NoError(t, err)
+		require.Equal(t, "msgID="+msgID, ts.recvReq.URL.Query().Encode())
+	})
 }
 
 func TestGenerateEmail(t *testing.T) {

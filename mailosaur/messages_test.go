@@ -42,6 +42,18 @@ func TestGetMessage(t *testing.T) {
 		require.Equal(t, "/messages/"+msgID, ts.recvReq.URL.Path)
 		require.Equal(t, http.MethodGet, ts.recvReq.Method)
 	})
+
+	t.Run("returns message", func(t *testing.T) {
+		ts := setup(t, &TestResponse{
+			Body:       LoadTestData(t, "get_message_success.json"),
+			StatusCode: http.StatusOK,
+		})
+
+		msgID := RandomMessageID()
+		msg, err := ts.client.GetMessage(msgID)
+		require.NoError(t, err)
+		require.NotEmpty(t, msg)
+	})
 }
 func TestDeleteMessage(t *testing.T) {
 	type testSetup struct {
@@ -153,6 +165,17 @@ func TestListMessages(t *testing.T) {
 		_, err := ts.client.ListMessages(mailosaur.SetReceivedAfter(receivedAfter))
 		require.NoError(t, err)
 		require.Equal(t, receivedAfter.Format(time.RFC3339), ts.recvReq.URL.Query().Get("receivedAfter"))
+	})
+
+	t.Run("returns expected number of messages", func(t *testing.T) {
+		ts := setup(t, &TestResponse{
+			Body:       LoadTestData(t, "list_messages_success.json"),
+			StatusCode: http.StatusOK,
+		})
+
+		messages, err := ts.client.ListMessages()
+		require.NoError(t, err)
+		require.Len(t, messages, 1)
 	})
 }
 
@@ -292,5 +315,16 @@ func TestSearchMessages(t *testing.T) {
 		_, err := ts.client.SearchMessages(ts.defaultLookup, mailosaur.SetReceivedAfter(receivedAfter))
 		require.NoError(t, err)
 		require.Equal(t, receivedAfter.Format(time.RFC3339), ts.recvReq.URL.Query().Get("receivedAfter"))
+	})
+
+	t.Run("returns expected number of messages", func(t *testing.T) {
+		ts := setup(t, &TestResponse{
+			Body:       LoadTestData(t, "search_messages_success.json"),
+			StatusCode: http.StatusOK,
+		})
+
+		messages, err := ts.client.SearchMessages(ts.defaultLookup)
+		require.NoError(t, err)
+		require.Len(t, messages, 1)
 	})
 }
